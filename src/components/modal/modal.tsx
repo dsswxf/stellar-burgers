@@ -13,8 +13,13 @@ export const Modal: FC<TModalProps> = memo(({ title, onClose, children }) => {
     };
 
     document.addEventListener('keydown', handleEsc);
+    // Lock scroll
+    document.body.style.overflow = 'hidden';
+
     return () => {
       document.removeEventListener('keydown', handleEsc);
+      // Unlock scroll
+      document.body.style.overflow = '';
     };
   }, [onClose]);
 
