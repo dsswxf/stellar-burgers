@@ -2,10 +2,9 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Burger Constructor functionality', () => {
   test.beforeEach(async ({ page }) => {
-    // Intercept requests and serve from HAR, or update it if doesn't exist/run with update: true
     await page.routeFromHAR('tests/hars/network.har', {
-      url: '*/**/api/ingredients',
-      update: true
+      url: /.*\/api\/ingredients/,
+      update: false
     });
     
     await page.goto('/');
@@ -16,10 +15,11 @@ test.describe('Burger Constructor functionality', () => {
     const ingredient = page.locator('[data-cy="ingredient-item"]').first();
     await ingredient.click();
 
-    // Verify modal is visible
+    // Verify modal is visible and contains ingredient name
     const modal = page.locator('[data-cy="modal"]'); // need to add data-cy or use text
     // Wait for a text in modal
-    await expect(page.getByText('Детали ингредиента')).toBeVisible();
+    await expect(modal.getByText('Детали ингредиента')).toBeVisible();
+    await expect(modal.getByText('Краторная булка N-200i')).toBeVisible();
 
     // Close via cross
     const closeButton = page.locator('[data-cy="modal-close-button"]');
@@ -62,44 +62,18 @@ test.describe('Order Creation functionality', () => {
       window.localStorage.setItem('refreshToken', 'fake-refresh-token');
     });
 
-    // Intercept order request to return mock data
-    await page.route('*/**/api/orders', async (route) => {
-      const request = route.request();
-      if (request.method() === 'POST') {
-        await route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify({
-            success: true,
-            name: "Mock Burger",
-            order: {
-              number: 123456
-            }
-          })
-        });
-      } else {
-        await route.continue();
-      }
-    });
-
-    // Mock auth user
-    await page.route('*/**/api/auth/user', async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          success: true,
-          user: {
-            email: 'test@example.com',
-            name: 'Test User'
-          }
-        })
-      });
-    });
-
-    // Also load ingredients from HAR
     await page.routeFromHAR('tests/hars/network.har', {
-      url: '*/**/api/ingredients',
+      url: /.*\/api\/auth\/user/,
+      update: false
+    });
+
+    await page.routeFromHAR('tests/hars/network.har', {
+      url: /.*\/api\/orders/,
+      update: false
+    });
+
+    await page.routeFromHAR('tests/hars/network.har', {
+      url: /.*\/api\/ingredients/,
       update: false
     });
 
